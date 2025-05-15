@@ -1,6 +1,7 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
 public class Calculator extends JFrame implements ActionListener {
     private JTextField display;
@@ -10,49 +11,36 @@ public class Calculator extends JFrame implements ActionListener {
     private boolean startNewNumber;
 
     public Calculator() {
-        setTitle("Basic Calculator");
-        setSize(320, 400);
-        setLocationRelativeTo(null);
+        setTitle("Simple Calculator");
+        setSize(400, 500);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
         setLayout(new BorderLayout());
-        
+
         currentInput = new StringBuilder();
         result = 0;
         operator = "";
         startNewNumber = true;
 
-        // Display panel at top
         display = new JTextField("0");
         display.setFont(new Font("Arial", Font.BOLD, 24));
         display.setEditable(false);
         display.setHorizontalAlignment(SwingConstants.RIGHT);
-        display.setBackground(Color.WHITE);
         add(display, BorderLayout.NORTH);
 
-        // Button panel center
         JPanel buttonPanel = new JPanel();
-        buttonPanel.setLayout(new GridLayout(5, 4, 5, 5));
-        buttonPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-
+        buttonPanel.setLayout(new GridLayout(4, 4, 10, 10));
         String[] buttons = {
-            "C", "", "", "/",
-            "7", "8", "9", "*",
-            "4", "5", "6", "-",
-            "1", "2", "3", "+",
-            "0", ".", "=", ""
+            "7", "8", "9", "/",
+            "4", "5", "6", "*",
+            "1", "2", "3", "-",
+            "0", "C", "=", "+"
         };
 
         for (String text : buttons) {
-            JButton button;
-            if (text.equals("")) {
-                button = new JButton();
-                button.setEnabled(false);
-                button.setVisible(false);
-            } else {
-                button = new JButton(text);
-                button.setFont(new Font("Arial", Font.BOLD, 20));
-                button.addActionListener(this);
-            }
+            JButton button = new JButton(text);
+            button.setFont(new Font("Arial", Font.BOLD, 20));
+            button.addActionListener(this);
             buttonPanel.add(button);
         }
 
@@ -63,31 +51,27 @@ public class Calculator extends JFrame implements ActionListener {
     public void actionPerformed(ActionEvent e) {
         String command = e.getActionCommand();
 
-        if ("0123456789.".contains(command)) {
+        if ("0123456789".contains(command)) {
             if (startNewNumber) {
                 currentInput.setLength(0); // Clear current input
                 startNewNumber = false;
             }
-            if (command.equals(".") && currentInput.toString().contains(".")) {
-                // ignore second decimal point
-                return;
-            }
             currentInput.append(command);
             display.setText(currentInput.toString());
-        } else if ("+-*/".contains(command)) {
-            calculate();
-            operator = command;
-            startNewNumber = true;
-        } else if (command.equals("=")) {
-            calculate();
-            operator = "";
-            startNewNumber = true;
         } else if (command.equals("C")) {
             currentInput.setLength(0);
             result = 0;
             operator = "";
             startNewNumber = true;
             display.setText("0");
+        } else if (command.equals("=")) {
+            calculate();
+            operator = "";
+            startNewNumber = true;
+        } else {
+            calculate();
+            operator = command;
+            startNewNumber = true;
         }
     }
 
@@ -127,13 +111,9 @@ public class Calculator extends JFrame implements ActionListener {
                     break;
             }
         }
-        if (Math.floor(result) == result) {
-            display.setText(String.valueOf((long) result));
-        } else {
-            display.setText(String.valueOf(result));
-        }
+        display.setText(String.valueOf(result));
         currentInput.setLength(0);
-        currentInput.append(display.getText());
+        currentInput.append(result);
     }
 
     public static void main(String[] args) {
