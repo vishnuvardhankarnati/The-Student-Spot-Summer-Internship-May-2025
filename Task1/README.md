@@ -36,4 +36,7 @@ Enter your choice: 1
 Enter student name: vishnu vardhan
 Enter student ID: 598
 Enter student age: 21
-Student added: Student ID: 598, Name: vishnu vardhan, Age: 21
+Student added:
+ Student ID: 598,
+ Name: vishnu vardhan,
+ Age: 21
