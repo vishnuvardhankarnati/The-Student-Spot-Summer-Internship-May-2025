@@ -4,23 +4,21 @@ import java.util.*;
 class BankAccount implements Serializable {
     private static final long serialVersionUID = 1L;
     private String accountNumber;
-    private String accountHolder;
+    private String accountHolderName;
     private double balance;
 
-    public BankAccount(String accountNumber, String accountHolder) {
+    public BankAccount(String accountNumber, String accountHolderName, double initialDeposit) {
         this.accountNumber = accountNumber;
-        this.accountHolder = accountHolder;
-        this.balance = 0.0;
+        this.accountHolderName = accountHolderName;
+        this.balance = initialDeposit;
     }
 
     public String getAccountNumber() {
         return accountNumber;
     }
-
-    public String getAccountHolder() {
-        return accountHolder;
+    public String getAccountHolderName() {
+        return accountHolderName;
     }
-
     public double getBalance() {
         return balance;
     }
@@ -28,33 +26,34 @@ class BankAccount implements Serializable {
     public void deposit(double amount) {
         if(amount > 0) {
             balance += amount;
-            System.out.println("Deposit successful. New balance: " + balance);
+            System.out.println("Deposit successful. New balance: $" + balance);
         } else {
-            System.out.println("Deposit amount must be positive.");
+            System.out.println("Invalid deposit amount.");
         }
     }
 
     public void withdraw(double amount) {
         if(amount <= 0) {
-            System.out.println("Withdrawal amount must be positive.");
+            System.out.println("Invalid withdrawal amount.");
         } else if(amount > balance) {
-            System.out.println("Insufficient funds.");
+            System.out.println("Insufficient balance.");
         } else {
             balance -= amount;
-            System.out.println("Withdrawal successful. Remaining balance: " + balance);
+            System.out.println("Withdrawal successful. New balance: $" + balance);
         }
     }
 
-    public void displayAccount() {
-        System.out.println("Account Number: " + accountNumber);
-        System.out.println("Account Holder: " + accountHolder);
-        System.out.println("Balance: " + balance);
+    @Override
+    public String toString() {
+        return "Account Number: " + accountNumber +
+               "\nAccount Holder: " + accountHolderName +
+               "\nBalance: $" + String.format("%.2f", balance);
     }
 }
 
 public class BankManagementSystem {
-    private static final String DATA_FILE = "Task3/accounts.dat";
-    private HashMap<String, BankAccount> accounts;
+    private static final String DATA_FILE = "accounts.dat";
+    private Map<String, BankAccount> accounts;
     private Scanner scanner;
 
     public BankManagementSystem() {
@@ -64,22 +63,25 @@ public class BankManagementSystem {
     }
 
     private void loadAccounts() {
-        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(DATA_FILE))) {
-            accounts = (HashMap<String, BankAccount>) ois.readObject();
-            System.out.println("Accounts loaded successfully.");
-        } catch (FileNotFoundException e) {
-            System.out.println("No previous account data found. Starting fresh.");
+        File file = new File(DATA_FILE);
+        if(!file.exists()) {
+            System.out.println("No accounts data found, starting fresh.");
+            return;
+        }
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
+            accounts = (Map<String, BankAccount>) ois.readObject();
+            System.out.println("Accounts loaded from file.");
         } catch (IOException | ClassNotFoundException e) {
-            System.out.println("Error loading account data.");
+            System.out.println("Failed to load accounts: " + e.getMessage());
         }
     }
 
     private void saveAccounts() {
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(DATA_FILE))) {
             oos.writeObject(accounts);
-            System.out.println("Account data saved.");
+            System.out.println("Accounts saved successfully.");
         } catch (IOException e) {
-            System.out.println("Error saving account data.");
+            System.out.println("Failed to save accounts: " + e.getMessage());
         }
     }
 
@@ -92,49 +94,38 @@ public class BankManagementSystem {
         }
         System.out.print("Enter account holder name: ");
         String accHolder = scanner.nextLine();
-        BankAccount account = new BankAccount(accNum, accHolder);
+        System.out.print("Enter initial deposit amount: ");
+        double initialDeposit = readDouble();
+        if(initialDeposit < 0) {
+            System.out.println("Initial deposit cannot be negative.");
+            return;
+        }
+        BankAccount account = new BankAccount(accNum, accHolder, initialDeposit);
         accounts.put(accNum, account);
-        System.out.println("Account created successfully.");
-        saveAccounts();
+        System.out.println("Account created successfully!");
     }
 
     private void deposit() {
-        System.out.print("Enter account number: ");
-        String accNum = scanner.nextLine();
-        BankAccount account = accounts.get(accNum);
-        if(account == null) {
-            System.out.println("Account not found.");
-            return;
-        }
-        System.out.print("Enter amount to deposit: ");
-        double amount = getDoubleInput();
+        BankAccount account = getAccountByNumber();
+        if(account == null) return;
+        System.out.print("Enter deposit amount: ");
+        double amount = readDouble();
         account.deposit(amount);
-        saveAccounts();
     }
 
     private void withdraw() {
-        System.out.print("Enter account number: ");
-        String accNum = scanner.nextLine();
-        BankAccount account = accounts.get(accNum);
-        if(account == null) {
-            System.out.println("Account not found.");
-            return;
-        }
-        System.out.print("Enter amount to withdraw: ");
-        double amount = getDoubleInput();
+        BankAccount account = getAccountByNumber();
+        if(account == null) return;
+        System.out.print("Enter withdrawal amount: ");
+        double amount = readDouble();
         account.withdraw(amount);
-        saveAccounts();
     }
 
     private void displayAccount() {
-        System.out.print("Enter account number: ");
-        String accNum = scanner.nextLine();
-        BankAccount account = accounts.get(accNum);
-        if(account == null) {
-            System.out.println("Account not found.");
-            return;
+        BankAccount account = getAccountByNumber();
+        if(account != null) {
+            System.out.println(account);
         }
-        account.displayAccount();
     }
 
     private void displayAllAccounts() {
@@ -142,47 +133,67 @@ public class BankManagementSystem {
             System.out.println("No accounts to display.");
             return;
         }
-        for (BankAccount account : accounts.values()) {
-            account.displayAccount();
-            System.out.println("--------------------");
+        for(BankAccount acc : accounts.values()) {
+            System.out.println("---------------");
+            System.out.println(acc);
         }
     }
 
-    private double getDoubleInput() {
+    private BankAccount getAccountByNumber() {
+        System.out.print("Enter account number: ");
+        String accNum = scanner.nextLine();
+        BankAccount account = accounts.get(accNum);
+        if(account == null) {
+            System.out.println("Account not found.");
+        }
+        return account;
+    }
+
+    private double readDouble() {
         while(true) {
             String input = scanner.nextLine();
             try {
                 return Double.parseDouble(input);
             } catch(NumberFormatException e) {
-                System.out.print("Invalid input. Enter a valid number: ");
+                System.out.print("Invalid input. Please enter a valid number: ");
             }
         }
     }
 
     private void menu() {
         while(true) {
-            System.out.println("\n--- Bank Management System ---");
-            System.out.println("1. Create Account");
+            System.out.println("\nBank Management System");
+            System.out.println("1. Create new account");
             System.out.println("2. Deposit");
             System.out.println("3. Withdraw");
-            System.out.println("4. Display Account Details");
-            System.out.println("5. Display All Accounts");
-            System.out.println("6. Exit");
-            System.out.print("Choose an option: ");
-
+            System.out.println("4. Display account");
+            System.out.println("5. Display all accounts");
+            System.out.println("6. Save and Exit");
+            System.out.print("Enter your choice: ");
             String choice = scanner.nextLine();
+
             switch(choice) {
-                case "1" -> createAccount();
-                case "2" -> deposit();
-                case "3" -> withdraw();
-                case "4" -> displayAccount();
-                case "5" -> displayAllAccounts();
-                case "6" -> {
+                case "1":
+                    createAccount();
+                    break;
+                case "2":
+                    deposit();
+                    break;
+                case "3":
+                    withdraw();
+                    break;
+                case "4":
+                    displayAccount();
+                    break;
+                case "5":
+                    displayAllAccounts();
+                    break;
+                case "6":
                     saveAccounts();
-                    System.out.println("Exiting... Goodbye!");
+                    System.out.println("Exiting the program.");
                     return;
-                }
-                default -> System.out.println("Invalid option. Try again.");
+                default:
+                    System.out.println("Invalid choice, please try again.");
             }
         }
     }
