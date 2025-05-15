@@ -17,13 +17,14 @@ This is a simple Java program that manages student records using classes and obj
 ## Installation
 
 1. Clone this repository or download the files:
-   ```bash
+
    git clone <repository-url>
 
 2.Navigate to the project directory:
 
-cd student-record-management
-Compile the Java files:
+cd studentrecords
+
+3.Compile the Java files:
 javac Student.java StudentManager.java
 
 Example
